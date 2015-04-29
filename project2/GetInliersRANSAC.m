@@ -13,7 +13,7 @@ n_best = 0;
 for i = 1:max_iter
     r_idx = ceil(rand(8,1)*N);
     F=EstimateFundamentalMatrix(x1(r_idx,:),x2(r_idx,:));
-    mask = sqrt(sum((x2_aug'.*(F*x1_aug')).^2)) < threshold;
+    mask = abs(sum((x2_aug'.*(F*x1_aug')))) < threshold;
     num_in = sum(mask);
     if n_best < num_in
         n_best = num_in;

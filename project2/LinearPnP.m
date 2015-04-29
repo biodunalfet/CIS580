@@ -3,24 +3,25 @@ N = length(X);
 
 M = zeros(3*N,12);
 for i=1:N
-    M(3*(i-1)+1:3*i,:) = cross_mat([X(i,:) 1],x(i,:));
-    %{
-    M(3*(i-1)+1:3*i,:) = [zeros(1,4) -X(i,:) x(i,2)*X(i,:);...
-                            X(i,:) zeros(1,4) -x(i,1)*X;...
-                            -x(i,2)*X(i,:) x(i,1)*X(i,:) zeros(1,4)];
-    %}
+    M(3*(i-1)+1:3*i,:) = cross_mat(X(i,:),x(i,:));
+
 end
 
 [~,~,V] = svd(M);
-P = reshape(V(:,end),3,4);
+P = reshape(V(:,end)/V(end,end),4,3)';
 H = K\P;
-R = H(:,1:3);
+
+[UR,~,UV] = svd(H(:,1:3));
+R = sign(det(UR*UV'))*UR*UV';
 C = -R'*H(:,4);
-%{d
-    function A = cross_mat(X,x)
-        A = [zeros(1,4) -X x(2)*X;...
-            X zeros(1,4) -x(1)*X;...
-            -x(2)*X x(1)*X zeros(1,4)];
+
+    function A = cross_mat(X_i,x_i)
+        x_p = [x_i(:); 1];
+        X_p = [X_i(:); 1];
+        A = [0 -x_p(3) x_p(2);...
+            x_p(3) 0 -x_p(1);...
+            -x_p(2) x_p(1) 0]*[X_p' zeros(1,8);...
+                            zeros(1,4) X_p' zeros(1,4);...
+                            zeros(1,8) X_p'];
     end
-%}
 end
