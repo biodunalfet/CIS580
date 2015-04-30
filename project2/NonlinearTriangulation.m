@@ -9,12 +9,12 @@ opts = optimoptions(@lsqnonlin, 'Algorithm', 'levenberg-marquardt',...
 
 P1 = K*R1*[eye(3) -C1];
 P2 = K*R2*[eye(3) -C2];
-
-X = zeros(size(X0));
+[N,M] = size(X0);
+X = zeros([N,M]);
 nbytes = 0;
 for i = 1:size(X0,1)
     fprintf(repmat('\b',1,nbytes))
-    nbytes = fprintf('iteration: %d of %d',i, size(X0,1));
+    nbytes = fprintf('iteration: %d of %d',i, N);
     [X(i,:),~] = lsqnonlin(@error,X0(i,:),[],[],opts,x1(i,:),x2(i,:),P1,P2);
 end
 fprintf('\n')

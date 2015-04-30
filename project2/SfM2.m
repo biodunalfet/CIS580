@@ -55,7 +55,7 @@ for i = 1:5
         
         % RANSAC outlier rejection
         t_s = toc;
-        [x1, x2, idx] = GetInliersRANSAC(feature_1,feature_2,0.05,10000);
+        [x1, x2, idx] = GetInliersRANSAC(feature_1,feature_2,0.03,10000);
         t_e = toc;
         n_bytes = fprintf('time to RANSAC: %6.6f seconds\n',t_e-t_s);
         color_inliers = color_data(idx,:);
@@ -90,7 +90,7 @@ end
 
 % run non-linear optimization
 X = NonlinearTriangulation(K, zeros(3,1), eye(3), C, R, x1, x2, X0);
-
+fprintf('\n')
 %{
 % plot triangulated features and their 3d points
 figure
@@ -106,9 +106,10 @@ ylabel('y')
 zlabel('z')
 %}
 
-C_set = {C};
-R_set = {R};
-X_set = X;
+C_set = {zeros(3,1);C};
+R_set = {eye(3);R};
+X_set = cell(size(matches));
+X_set{1,2} = X;
 for i = 1:1
     for j = 1:6
         if ~isempty(matches{i,j})
@@ -136,8 +137,16 @@ for i = 1:1
         hold on
         plot(match_inliers{i,j}(idx2,3),match_inliers{i,j}(idx2,4),'b*')
         %}
-        
-        [Cnew, Rnew] = PnPRANSAC(X(idx1,:),x2(idx2,:),K,0.1,10000);
+        Cnew = [];
+        Rnew = [];
+        iteration = 1;
+        nbytes = 0;
+        while isempty(Cnew) || isempty(Rnew)
+            fprintf(repmat('\b',1,n_bytes))
+            nbytes = fprintf('iteration: %d', iteration);
+            iteration = iteration+1;
+            [Cnew, Rnew] = PnPRANSAC(X(idx1,:),x2(idx2,:),K,0.01,10000);
+        end
         [Cnew, Rnew] = NonlinearPnP(X(idx1,:),x2(idx2,:),K,Cnew,Rnew);
         
         %{d
@@ -147,16 +156,16 @@ for i = 1:1
         hold on
         plot(x2(idx2,1),x2(idx2,2),'b*')
         P = K*Rnew*[eye(3) -Cnew];
-        X_aug = [X(idx1,:) ones(length(idx1),1)]';
+        X_aug = [X_set{i,n_empty_idx}(idx1,:) ones(length(idx1),1)]';
         x_p = bsxfun(@rdivide,P(1:2,:)*X_aug,P(3,:)*X_aug)';
         plot(x_p(:,1),x_p(:,2),'r*')
         %}
-        %{
+        %{d
         x1 = match_inliers{i,j}(:,1:2);
-        Xnew = LinearTriangulation(K,C,R,Cnew,Rnew,x1,x2);
-        Xnew = NonlinearTriangulation(K,C,R,Cnew,Rnew,x1,x2,Xnew);
+        Xnew = LinearTriangulation(K,C_set{i},R_set{i},Cnew,Rnew,x1,x2);
+        Xnew = NonlinearTriangulation(K,C_set{i},R_set{i},Cnew,Rnew,x1,x2,Xnew);
         %}
-        %{
+        %{d
         % plot triangulated features and their 3d points
         figure
         showMatchedFeatures(im{i},im{j},x1,x2)
