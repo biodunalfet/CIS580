@@ -1,3 +1,5 @@
+clear all
+close all
 % Demo program for sba's MEX-file interface
 % Performs Euclidean bundle adjustment with known camera intrinsics
 
@@ -51,6 +53,7 @@ while ~feof(fid),
     % "projs" now has the image projections of point "npts" and "ptvis" is its visibility mask
     pts2D=[pts2D projs];
     dmask(npts, :)=ptvis;
+    %spmask(npts,:)=ptvis;
   end
 end
 fclose(fid);
@@ -77,9 +80,9 @@ opts=[1E-03, 1E-12, 1E-12, 1E-12, 0.0]; % setting to [] forces defaults to be us
 %profile on
 
 % motion & structure BA
-[ret, p, info]=sba(npts, 0, ncams, 1, spmask, p0, cnp, pnp, pts2D, 2, 'projRTS', 'jacprojRTS', 100, 1, opts, 'motstr', r0, cal);
+%[ret, p, info]=sba(npts, 0, ncams, 1, spmask, p0, cnp, pnp, pts2D, 2, 'projRTS', 'jacprojRTS', 100, 1, opts, 'motstr', r0, cal);
 % as above but without Jacobian
-%[ret, p, info]=sba(npts, 0, ncams, 1, dmask, p0, cnp, pnp, pts2D, 2, 'projRTS', 100, 1, opts, r0, cal);
+[ret, p, info]=sba(npts, 0, ncams, 1, full(spmask), p0, cnp, pnp, pts2D, 2, 'projRTS', 100, 1, opts, r0, cal);
 
 
 % motion & structure BA using C projection function & Jacobian from a shared library.
@@ -125,3 +128,6 @@ pts3D=reshape(p(ncams*cnp+1:ncams*cnp+npts*pnp), pnp, npts)';
 %format long;
 %cams
 %pts3D
+figure(1)
+clf
+showPointCloud(pts3D)

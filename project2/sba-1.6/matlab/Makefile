@@ -3,14 +3,15 @@
 #
 
 MEX=/Applications/MATLAB_R2014b.app/bin/mex
-MEXCFLAGS=-I.. -O -lgfortran #-g
+MEXEXT=/Applications/MATLAB_R2014b.app/bin/mexext
+MEXCFLAGS=-v -I.. -O -lgfortran -largeArrayDims #-compatibleArrayDims #-g
 # WHEN USING LAPACK, CHANGE THE NEXT TWO LINES TO WHERE YOUR COMPILED LAPACK/BLAS & F2C LIBS ARE!
 LAPACKBLASLIBS_PATH=/usr/lib
 F2CLIBS_PATH=/usr/local/lib
 
 # I had to specify the absolute path to the libs, otherwise mex linked against their dynamic versions...
 INTFACESRCS=sba.c
-INTFACESOBJ=sba.$(shell `mexext`)
+INTFACESOBJ=sba.$(MEXEXT)
 SBALIB=../libsba.a
 LAPACKLIBS=$(LAPACKBLASLIBS_PATH)/liblapack.a $(LAPACKBLASLIBS_PATH)/libblas.a $(F2CLIBS_PATH)/libf2c.a
                                  # On systems with a FORTRAN (not f2c'ed) version of LAPACK, libf2c.a is
