@@ -106,24 +106,29 @@ ylabel('y')
 zlabel('z')
 %}
 
-C_set = {zeros(3,1);C};
-R_set = {eye(3);R};
+C_set = cell(6,1);
+R_set = cell(6,1);
+
+C_set{1} = zeros(3,1);
+C_set{2} = C;
+R_set{1} = eye(3);
+R_set{2} = R;
+
 X_set = cell(size(matches));
 X_set{1,2} = X;
-for i = 1:1
+for i = 1:5
     for j = 1:6
         if ~isempty(matches{i,j})
             n_empty_idx = j;
             break
         end
     end
-    for j = i:3
-        if isempty(matches{i,j}) || (i == 1 && j == 2)
+    for j = i:6
+        if isempty(matche_inliers{i,j}) || (i == 1 && j == 2)
             continue
         end
         x2 = match_inliers{i,j}(:,3:4);
-        [~,idx1,idx2] = intersect(ransac_indices{1,2},ransac_indices{1,3});
-
+        [~,idx1,idx2] = intersect(ransac_indices{i,n_empty_idx},ransac_indices{i,j});
         %{
         figure
         clf
@@ -145,11 +150,16 @@ for i = 1:1
             fprintf(repmat('\b',1,n_bytes))
             nbytes = fprintf('iteration: %d', iteration);
             iteration = iteration+1;
-            [Cnew, Rnew] = PnPRANSAC(X(idx1,:),x2(idx2,:),K,0.01,10000);
+            [Cnew, Rnew] = PnPRANSAC(X(idx1,:),x2(idx2,:),K,0.03,10000);
         end
         [Cnew, Rnew] = NonlinearPnP(X(idx1,:),x2(idx2,:),K,Cnew,Rnew);
+        C_set{j} = Cnew;
+        R_set{j} = Rnew;
         
-        %{d
+        x1 = match_inliers{i,j}(:,1:2);
+        Xnew = LinearTriangulation(K,C_set{i},R_set{i},Cnew,Rnew,x1,x2);
+        Xnew = NonlinearTriangulation(K,C_set{i},R_set{i},Cnew,Rnew,x1,x2,Xnew);
+        %{
         figure
         clf
         imshow(im{j})
@@ -160,17 +170,13 @@ for i = 1:1
         x_p = bsxfun(@rdivide,P(1:2,:)*X_aug,P(3,:)*X_aug)';
         plot(x_p(:,1),x_p(:,2),'r*')
         %}
-        %{d
-        x1 = match_inliers{i,j}(:,1:2);
-        Xnew = LinearTriangulation(K,C_set{i},R_set{i},Cnew,Rnew,x1,x2);
-        Xnew = NonlinearTriangulation(K,C_set{i},R_set{i},Cnew,Rnew,x1,x2,Xnew);
-        %}
-        %{d
+        %{
         % plot triangulated features and their 3d points
         figure
         showMatchedFeatures(im{i},im{j},x1,x2)
         drawnow
-
+        %}
+        %{d
         figure
         mask = sqrt(sum(Xnew.^2,2))<500 & Xnew(:,3) > 0;
         showPointCloud(Xnew(mask,:)*[0 -1 0; 0 0 -1; 1 0 0], uint8(colors(mask,:)))
