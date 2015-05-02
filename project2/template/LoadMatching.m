@@ -1,4 +1,4 @@
-function [Mx, My, V] = LoadMatching(filename, image_idx, nImages)
+function [Mx, My, V, C] = LoadMatching(filename, image_idx, nImages)
 
 fid = fopen(filename);
 fscanf(fid, '%s', 1);
@@ -6,9 +6,10 @@ n = fscanf(fid, '%d', 1);
 Mx = zeros(n, nImages);
 My = zeros(n, nImages);
 V = zeros(n, nImages);
+C = zeros(n, 3);
 for i = 1 : n
     m = fscanf(fid, '%d', 1);
-    fscanf(fid, '%d', 3);
+    C(i, :) = fscanf(fid, '%d %d %d', 3);
     Mx(i, image_idx) = fscanf(fid, '%f', 1);
     My(i, image_idx) = fscanf(fid, '%f', 1);
     V(i, image_idx) = 1;

@@ -18,14 +18,15 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Load matching
-Mx = []; My = []; M = [];
+Mx = []; My = []; M = []; Color = [];
 disp('Loading matches...')
 for iImage = 1 : nImages-1;
     str = sprintf('../matching%d.txt', iImage);
-    [mx, my, m] = LoadMatching(str, iImage, nImages);
+    [mx, my, m, color] = LoadMatching(str, iImage, nImages);
     Mx = [Mx;mx];
     My = [My;my];
     M = [M;m];
+    Color = [Color; color];
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
@@ -48,7 +49,7 @@ for iImage1 = 1 : nImages-1
         if size(x1,1) < 8
             continue;
         end
-        [~, ~, inlier] = GetInliersRANSAC(x1, x2,0.03,10000);
+        [~, ~, inlier] = GetInliersRANSAC(x1, x2,0.005,10000);
         M(idx(~inlier),iImage1) = 0;
     end
 end
@@ -172,6 +173,17 @@ for iImage = 1 : nImages
         ReconX(idx) = 1;
     end    
     
+    P_temp = K*R*[eye(3) -C];
+    X_aug_temp = [X ones(size(X,1),1)];
+    x_p = bsxfun(@rdivide,P_temp(1:2,:)*X_aug_temp',P_temp(3,:)*X_aug_temp')';
+    
+    figure(1)
+    clf
+    imshow(im{iImage})
+    hold on
+    plot(x_p(:,1),x_p(:,2),'r*')
+    plot(Mx(:,iImage),My(:,iImage),'b*')
+    drawnow
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
     % Set visibiltiy and measurements for bundle adjustment
     V_bundle = V(:,r_idx);
@@ -188,3 +200,5 @@ figure(1)
 clf
 mask = sqrt(sum(X3D.^2,2))<500 & X3D(:,3) > 0;
 showPointCloud(X3D(mask,:)*[0 -1 0; 0 0 -1; 1 0 0])
+
+save('pcd.mat','X3D','Rr_set','Cr_set','ReconX','Color')
