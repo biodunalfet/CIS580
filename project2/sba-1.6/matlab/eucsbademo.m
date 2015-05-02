@@ -1,4 +1,4 @@
-clear all
+%clear all
 close all
 % Demo program for sba's MEX-file interface
 % Performs Euclidean bundle adjustment with known camera intrinsics
