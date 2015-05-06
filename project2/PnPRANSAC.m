@@ -1,4 +1,4 @@
-function [C,R] = PnPRANSAC(X, x, K, threshold, max_iter)
+function [C,R,n_best] = PnPRANSAC(X, x, K, threshold, max_iter)
 N = size(X,1);
 R = [];
 C = [];
