@@ -22,7 +22,7 @@ end
 % Load matching
 Mx = []; My = []; M = []; Color = [];
 disp('Loading matches...')
-%{d
+
 for iImage = 1 : nImages-1;
     str = sprintf('../matching%d.txt', iImage);
     [mx, my, m, color] = LoadMatching(str, iImage, nImages);
@@ -32,7 +32,6 @@ for iImage = 1 : nImages-1;
     Color = [Color; color];
 end
 
-%}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Initialize 3D points, reconstruction index, and visibility matrix
 
@@ -43,7 +42,6 @@ V = zeros(size(M,1), nImages);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Exclude outliers using F matrix
-%{d
 disp('Rejecting outliers...')
 n_inliers = 0;
 for iImage1 = 1 : nImages-1
@@ -62,27 +60,12 @@ for iImage1 = 1 : nImages-1
         M(idx(~inlier),iImage1) = 0;
     end
 end
-%return
-%}
-%{d
+
 figure(1)
 clf
 match_idx = all(logical(M(:,1:2)),2);
 showMatchedFeatures(im{1},im{2}, x1,x2)
-%{
-imshow(im{1})
-hold on
-plot(Mx(:,1), My(:,1),'ro')
 
-figure(2)
-clf
-imshow(im{1})
-hold on
-plot(Mx(logical(M(:,1)),1), My(logical(M(:,1)),1),'ro')
-%}
-
-return
-%}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Set initial two frames
 initialframe1 = 1;
@@ -129,50 +112,8 @@ faces = [1 2 3 1;...
     t_2 = -Rset{2}*Cset{2};
     t_3 = -Rset{3}*Cset{3};
     t_4 = -Rset{4}*Cset{4};
-    
-%{
-figure(3)
-mask = sqrt(sum(Xset{1}.^2,2)) < 30;% & Xset{1}(:,3) > 0;
-c_mask = find(idx);
-showPointCloud(Xset{1}(mask,:)*R_w',uint8(Color(c_mask(mask),:)))
-hold on
-p_1 = patch('Faces',faces,'Vertices',bsxfun(@plus,cam_verts*R_c',t_1')*Rset{1}*R_w','FaceColor',[0.5 0.5 0.5],'FaceAlpha',0.1);
-xlabel('x')
-ylabel('y')
-zlabel('z')
-
-figure(4)
-mask = sqrt(sum(Xset{2}.^2,2)) < 30;% & Xset{2}(:,3) > 0;
-c_mask = find(idx);
-showPointCloud(Xset{2}(mask,:)*R_w',uint8(Color(c_mask(mask),:)))
-hold on
-p_2 = patch('Faces',faces,'Vertices',bsxfun(@plus,cam_verts*R_c',t_2')*Rset{2}*R_w','FaceColor',[0.5 0.5 0.5],'FaceAlpha',0.1);
-xlabel('x')
-ylabel('y')
-zlabel('z')
-
-figure(5)
-mask = sqrt(sum(Xset{3}.^2,2)) < 30;% & Xset{3}(:,3) > 0;
-c_mask = find(idx);
-showPointCloud(Xset{3}(mask,:)*R_w',uint8(Color(c_mask(mask),:)))
-hold on
-p_3 = patch('Faces',faces,'Vertices',bsxfun(@plus,cam_verts*R_c',t_3')*Rset{3}*R_w','FaceColor',[0.5 0.5 0.5],'FaceAlpha',0.1);
-xlabel('x')
-ylabel('y')
-zlabel('z')
-
-figure(6)
-mask = sqrt(sum(Xset{4}.^2,2)) < 30;% & Xset{4}(:,3) > 0;
-c_mask = find(idx);
-showPointCloud(Xset{4}(mask,:)*R_w',uint8(Color(c_mask(mask),:)))
-hold on
-p_4 = patch('Faces',faces,'Vertices',bsxfun(@plus,cam_verts*R_c',t_4')*Rset{4}*R_w','FaceColor',[0.5 0.5 0.5],'FaceAlpha',0.1);
-xlabel('x')
-ylabel('y')
-zlabel('z')
-return
-%}
-    %{
+   
+%{d
 figure(7)
 clf
 mask = sqrt(sum(X.^2,2)) < 30 & X(:,3) > 0;
@@ -181,64 +122,21 @@ X_r = X(mask,:)*R_w';
 plot3(X_r(:,1),X_r(:,2),X_r(:,3),'ro')
 grid on
 axis equal
-%showPointCloud(X(mask,:)*R_w',uint8(Color(c_mask(mask),:)))
 hold on
-    %}
+%}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Nonlinear triangulation
 X_lin = X;
 disp('Starting nonlinear triangulation');
 X = NonlinearTriangulation(K, zeros(3,1), eye(3), C, R, x1, x2, X);
-%{
-[Cpnp, Rpnp] = LinearPnP(X,x1,K);
-P = K*Rpnp*[eye(3) -Cpnp];
-x_p = bsxfun(@rdivide,P(1:2,:)*[X ones(size(X,1),1)]',P(3,:)*[X ones(size(X,1),1)]')';
-figure(1)
-imshow(im{1})
-hold on
-plot(x_p(:,1),x_p(:,2),'ro')
-plot(x1(:,1),x1(:,2),'bo')
 
-figure(2)
-mask = sqrt(sum(X.^2,2)) < 50;
-showPointCloud(X(mask,:)*R_w')
-return
-%}
-%{
+%{d
 mask = sqrt(sum(X.^2,2)) < 30 & X(:,3) > 0;
 X_r = X(mask,:)*R_w';
 plot3(X_r(:,1),X_r(:,2),X_r(:,3),'bo')
 p_a = patch('Faces',faces,'Vertices',bsxfun(@plus,cam_verts*R_c',(-R*C)')*R*R_w','FaceColor',[0.5 0.5 0.5]);
 %}
-%{
-figure(8)
-clf
-P_1 = K*R*[eye(3) -C];
-x_p1 = bsxfun(@rdivide,P_1(1:2,:)*[X_lin ones(size(X_lin,1),1)]',P_1(3,:)*[X_lin ones(size(X_lin,1),1)]')';
-x_p2 = bsxfun(@rdivide,P_1(1:2,:)*[X ones(size(X,1),1)]',P_1(3,:)*[X ones(size(X,1),1)]')';
-imshow(im{2})
-hold on
-plot(x_p1(:,1),x_p1(:,2),'ro')
-plot(x_p2(:,1),x_p2(:,2),'go')
-plot(x2(:,1),x2(:,2),'*','color',[1 0.5 0])
-legend('Linear Triangulation Reprojection','Non-linear Triangulation Reprojection','Original Features')
 
-figure(9)
-clf
-R_w=[0 -1 0; 0 0 -1; 1 0 0]';
-R_c = [0 -1 0; 0 0 -1; 1 0 0];
-mask = sqrt(sum(X.^2,2)) < 30 & X(:,3) > 0;
-c_mask = find(idx);
-showPointCloud(X(mask,:)*R_w',uint8(Color(c_mask(mask),:)))
-xlabel('x')
-ylabel('y')
-zlabel('z')
-hold on
-p_a = patch('Faces',faces,'Vertices',bsxfun(@plus,cam_verts*R_c',(-R*C)')*R*R_w','FaceColor',[0.5 0.5 0.5]);
-
-
-return
-%}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Set reconstructed frame
 r_idx = [initialframe1, initialframe2];
@@ -250,8 +148,6 @@ Rr_set{1} = eye(3,3);
 Cr_set{2} = C;
 Rr_set{2} = R;
 
-% return;
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Set points and visibility matrix
 X3D(idx,:) = X;
@@ -261,7 +157,6 @@ V(idx, initialframe2) = 1;
 %% here
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Add images
-%color_scheme = {'bo','ro','go','ko','co','mo'};
 color_scheme = [[0.5 0.5 0.5];
                 [1 0 0];
                 [0 1 0];
@@ -383,23 +278,6 @@ for iImage = 1 : nImages
     % Run bundle adjustment
     disp('Bundle adjustment');
     [Cr_set, Rr_set, X3D] = BundleAdjustment(K, Cr_set, Rr_set, X3D, ReconX, V_bundle, Mx_bundle, My_bundle);
-    %{
-    figure(11)
-    clf
-    imshow(im{iImage})
-    P_i = K*Rr_set{end}*[eye(3) -Cr_set{end}];
-    x_p = bsxfun(@rdivide,P_i(1:2,:)*[X3D(logical(ReconX),:) ones(size(X3D(logical(ReconX),:),1),1)]',P_i(3,:)*[X3D(logical(ReconX),:) ones(size(X3D(logical(ReconX),:),1),1)]')';
-    hold on
-    plot(x_p(:,1),x_p(:,2),'ro')
-    plot(Mx(logical(ReconX),iImage),My(logical(ReconX),iImage),'*','color',[1 0.5 0])
-    axis equal
-    grid on
-    xlabel('x')
-    ylabel('y')
-    zlabel('z')
-    legend('Bundle adjusted projections','Original Features')
-    return
-    %}
 end
 
 for i = 1:6
