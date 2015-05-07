@@ -21,5 +21,5 @@ X3D(mask,:) = X;
 for i = 1:num_frames
     H = K\cP{i};
     Rr_set{i} = H(1:3,1:3);
-    Cr_set{i} = H(:,4);
+    Cr_set{i} = -Rr_set{i}'*H(:,4);
 end

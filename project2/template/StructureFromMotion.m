@@ -22,6 +22,7 @@ end
 % Load matching
 Mx = []; My = []; M = []; Color = [];
 disp('Loading matches...')
+%{d
 for iImage = 1 : nImages-1;
     str = sprintf('../matching%d.txt', iImage);
     [mx, my, m, color] = LoadMatching(str, iImage, nImages);
@@ -31,14 +32,18 @@ for iImage = 1 : nImages-1;
     Color = [Color; color];
 end
 
+%}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Initialize 3D points, reconstruction index, and visibility matrix
+
+%load('ransac_data.mat')
 X3D = zeros(size(M,1), 3);
 ReconX = zeros(size(M,1),1);
 V = zeros(size(M,1), nImages);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Exclude outliers using F matrix
+%{d
 disp('Rejecting outliers...')
 n_inliers = 0;
 for iImage1 = 1 : nImages-1
@@ -57,9 +62,14 @@ for iImage1 = 1 : nImages-1
         M(idx(~inlier),iImage1) = 0;
     end
 end
-%{
+%return
+%}
+%{d
 figure(1)
 clf
+match_idx = logical(M);
+showMatchedFeatures(im{1},im{2}, [Mx(match_idx(:,1),1) My(match_idx(:,1),1)], [Mx(match_idx(:,2),2) My(match_idx(:,2),2)])
+%{
 imshow(im{1})
 hold on
 plot(Mx(:,1), My(:,1),'ro')
@@ -69,19 +79,21 @@ clf
 imshow(im{1})
 hold on
 plot(Mx(logical(M(:,1)),1), My(logical(M(:,1)),1),'ro')
+%}
+
 return
 %}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Set initial two frames
 initialframe1 = 1;
-initialframe2 = 2;
+initialframe2 = 4;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Get point index for two frames
 idx1 = find(M(:,initialframe1)==1);
 idx2 = find(M(:,initialframe2)==1);
 idx = intersect(idx1, idx2);
-n_inliers;
+
 x1 = [Mx(idx,initialframe1) My(idx,initialframe1)];
 x2 = [Mx(idx,initialframe2) My(idx,initialframe2)];
 
@@ -106,11 +118,7 @@ end
 disp('Picking correct camera pose...')
 [C, R, X] = DisambiguateCameraPose(Cset, Rset, Xset);
 
-cam_verts = 2*[0 0 0;...
-            1 0.75 0.5;...
-            1 0.75 -0.5;...
-            1 -0.75 -0.5;...
-            1 -0.75 0.5];
+cam_verts = [0 0 0;1 0.75 0.5;1 0.75 -0.5;1 -0.75 -0.5;1 -0.75 0.5];
 
 faces = [1 2 3 1;...
         2 3 4 5;...
@@ -162,6 +170,7 @@ p_4 = patch('Faces',faces,'Vertices',bsxfun(@plus,cam_verts*R_c',t_4')*Rset{4}*R
 xlabel('x')
 ylabel('y')
 zlabel('z')
+return
 %}
     %{
 figure(7)
@@ -180,6 +189,21 @@ hold on
 X_lin = X;
 disp('Starting nonlinear triangulation');
 X = NonlinearTriangulation(K, zeros(3,1), eye(3), C, R, x1, x2, X);
+%{
+[Cpnp, Rpnp] = LinearPnP(X,x1,K);
+P = K*Rpnp*[eye(3) -Cpnp];
+x_p = bsxfun(@rdivide,P(1:2,:)*[X ones(size(X,1),1)]',P(3,:)*[X ones(size(X,1),1)]')';
+figure(1)
+imshow(im{1})
+hold on
+plot(x_p(:,1),x_p(:,2),'ro')
+plot(x1(:,1),x1(:,2),'bo')
+
+figure(2)
+mask = sqrt(sum(X.^2,2)) < 50;
+showPointCloud(X(mask,:)*R_w')
+return
+%}
 %{
 mask = sqrt(sum(X.^2,2)) < 30 & X(:,3) > 0;
 X_r = X(mask,:)*R_w';
@@ -245,13 +269,13 @@ color_scheme = [[0.5 0.5 0.5];
                 [1 0.5 0];
                 [0 0 0]];
 X_reconstructed = cell(5,1);
-%{
+%{d
 figure(10)
 clf
-patch('Faces',faces,'Vertices',bsxfun(@plus,cam_verts*R_c',(-Rr_set{1}*Cr_set{1})')*Rr_set{2}*R_w','FaceColor',color_scheme(1,:));
+patch('Faces',faces,'Vertices',bsxfun(@plus,cam_verts*R_c',(-Rr_set{1}*Cr_set{1})')*Rr_set{1}*R_w','FaceColor',color_scheme(1,:));
 hold on
 X_r = X*R_w';
-mask = sqrt(sum(X_r.^2,2)) < 50 & X_r(:,3) > 0;
+mask = sqrt(sum(X_r.^2,2)) < 30 & X_r(:,3) > 0;
 plot3(X_r(mask,1),X_r(mask,2),X_r(mask,3),'o','color',color_scheme(1+1,:))
 patch('Faces',faces,'Vertices',bsxfun(@plus,cam_verts*R_c',(-Rr_set{2}*Cr_set{2})')*Rr_set{2}*R_w','FaceColor',color_scheme(1+1,:));
 
@@ -260,7 +284,7 @@ grid on
 drawnow
 %}
 for iImage = 1 : nImages
-    if ~isempty(find(r_idx==iImage,1)) || iImage == 5
+    if ~isempty(find(r_idx==iImage,1))
         continue;
     end
     
@@ -285,21 +309,21 @@ for iImage = 1 : nImages
     while isempty(C_pnp) || isempty(R_pnp)
         fprintf(repmat('\b',1,n_bytes))
         n_bytes = fprintf('no pose estimate yet...');
-        [C_pnp, R_pnp,n_best] = PnPRANSAC(X, x, K,10,10000);
+        [C_pnp, R_pnp] = PnPRANSAC(X, x, K,10,2000);
     end
-    n_best
     fprintf('Got a pose estimate!\n')
     %{
     figure(11)
     clf
-    imshow(im{3})
-    P_3 = K*R_pnp*[eye(3) -C_pnp];
-    x_p = bsxfun(@rdivide,P_3(1:2,:)*[X ones(size(X,1),1)]',P_3(3,:)*[X ones(size(X,1),1)]')';
+    imshow(im{iImage})
+    P_i = K*R_pnp*[eye(3) -C_pnp];
+    x_p = bsxfun(@rdivide,P_i(1:2,:)*[X ones(size(X,1),1)]',P_i(3,:)*[X ones(size(X,1),1)]')';
     hold on
     plot(x_p(:,1),x_p(:,2),'ro')
     %}
     disp('Nonlinear PnP');
-    [C, R] = NonlinearPnP(X, x, K, C_pnp, R_pnp);
+    [C, R,e_total,residual] = NonlinearPnP(X, x, K, C_pnp, R_pnp);
+    
     %{
     P_3_r = K*R*[eye(3) -C];
     x_p_r = bsxfun(@rdivide,P_3_r(1:2,:)*[X ones(size(X,1),1)]',P_3_r(3,:)*[X ones(size(X,1),1)]')';
@@ -337,27 +361,18 @@ for iImage = 1 : nImages
         X3D(idx,:) = X;
         ReconX(idx) = 1;
     end
-    %{
-    X_reconstructed{iImage} = X*R_w';
-    X_r = X*R_w';
-    mask = sqrt(sum(X_r.^2,2)) < 50 & X_r(:,1) > 0;
-    plot3(X_r(mask,1),X_r(mask,2),X_r(mask,3),'o','color',color_scheme(iImage,:))
-    patch('Faces',faces,'Vertices',bsxfun(@plus,cam_verts*R_c',(-R*C)')*R*R_w','FaceColor',color_scheme(iImage,:));
+    %{d
+    X_r = X3D(logical(V(:,iImage)),:)*R_w';
+    mask = sqrt(sum(X_r.^2,2)) < 30 & X_r(:,1) > 0;
+    plot3(X_r(mask,1),X_r(mask,2),X_r(mask,3),'o','color',color_scheme(r_idx==iImage,:))
+    patch('Faces',faces,'Vertices',bsxfun(@plus,cam_verts*R_c',(-R*C)')*R*R_w','FaceColor',color_scheme(r_idx==iImage,:));
     drawnow
     
     P_temp = K*R*[eye(3) -C];
     X_aug_temp = [X ones(size(X,1),1)];
     x_p = bsxfun(@rdivide,P_temp(1:2,:)*X_aug_temp',P_temp(3,:)*X_aug_temp')';
     %}
-    %{
-    figure(1)
-    clf
-    imshow(im{iImage})
-    hold on
-    plot(x_p(:,1),x_p(:,2),'r*')
-    plot(Mx(:,iImage),My(:,iImage),'b*')
-    drawnow
-    %}
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
     % Set visibiltiy and measurements for bundle adjustment
     V_bundle = V(:,r_idx);
@@ -368,7 +383,23 @@ for iImage = 1 : nImages
     % Run bundle adjustment
     disp('Bundle adjustment');
     [Cr_set, Rr_set, X3D] = BundleAdjustment(K, Cr_set, Rr_set, X3D, ReconX, V_bundle, Mx_bundle, My_bundle);
-
+    %{
+    figure(11)
+    clf
+    imshow(im{iImage})
+    P_i = K*Rr_set{end}*[eye(3) -Cr_set{end}];
+    x_p = bsxfun(@rdivide,P_i(1:2,:)*[X3D(logical(ReconX),:) ones(size(X3D(logical(ReconX),:),1),1)]',P_i(3,:)*[X3D(logical(ReconX),:) ones(size(X3D(logical(ReconX),:),1),1)]')';
+    hold on
+    plot(x_p(:,1),x_p(:,2),'ro')
+    plot(Mx(logical(ReconX),iImage),My(logical(ReconX),iImage),'*','color',[1 0.5 0])
+    axis equal
+    grid on
+    xlabel('x')
+    ylabel('y')
+    zlabel('z')
+    legend('Bundle adjusted projections','Original Features')
+    return
+    %}
 end
 
 for i = 1:6
@@ -378,7 +409,7 @@ for i = 1:6
     P = K*Rr_set{i}*[eye(3) -Cr_set{i}];
     mask = logical(ReconX(:));
     x_p = bsxfun(@rdivide,P(1:2,:)*[X3D(mask,:) ones(size(X3D(mask,:),1),1)]',P(3,:)*[X3D(mask,:) ones(size(X3D(mask,:),1),1)]')';
-    mask2 = mask & logical(M(:,i));
+    mask2 = mask;
     x = [Mx(mask2,i) My(mask2,i)];
     hold on
     plot(x_p(:,1),x_p(:,2),'ro')

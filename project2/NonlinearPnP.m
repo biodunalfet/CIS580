@@ -1,4 +1,4 @@
-function [C, R] = NonlinearPnP(X,x,K,C0,R0)
+function [C, R, e_total,residual] = NonlinearPnP(X,x,K,C0,R0)
 
 opts = optimoptions(@lsqnonlin, 'Algorithm', 'levenberg-marquardt',...
                                 'TolX', 1e-200,...
@@ -7,8 +7,8 @@ opts = optimoptions(@lsqnonlin, 'Algorithm', 'levenberg-marquardt',...
                                 'MaxIter', 1e64,...
                                 'Display','none');
 
-[params,~] = lsqnonlin(@error,[R2q(R0);C0],[],[],opts,X,x,K);
-%[params,~] = lsqnonlin(@error,[R0(:);C0],[],[],opts,X,x,K);
+[params,e_total,residual] = lsqnonlin(@error,[R2q(R0);C0],[],[],opts,X,x,K);
+%[params,e_total,residual] = lsqnonlin(@error,[R0(:);C0],[],[],opts,X,x,K);
 
 
 R = q2R(params(1:4));

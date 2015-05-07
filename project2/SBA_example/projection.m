@@ -8,9 +8,11 @@ K = [a(1) a(2) a(3); 0 a(4) a(5); 0 0 1];
 % Build P matrix from rt
 % rt is 7 dimensional vector-the first three are camera center and the rest are quaternion
 R = q2R(rt(1:4)');
-C = rt(5:end)';
-P = K*R*[eye(3) -C];
-
+%C = rt(5:end)';
+t = rt(5:end)';
+%P = K*R*[eye(3) -C];
+P = K*[R t];
+        
 %% Get xyz
 X = [xyz';1];
 

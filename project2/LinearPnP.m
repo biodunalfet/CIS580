@@ -4,16 +4,16 @@ N = length(X);
 M = zeros(3*N,12);
 for i=1:N
     M(3*(i-1)+1:3*i,:) = cross_mat(X(i,:),x(i,:));
-
 end
 
 [~,~,V] = svd(M);
 P = reshape(V(:,end)/V(end,end),4,3)';
 H = K\P;
 
-[UR,~,UV] = svd(H(:,1:3));
+[UR,UD,UV] = svd(H(:,1:3));
 R = sign(det(UR*UV'))*UR*UV';
-C = -R'*H(:,4);
+%R = R/norm(R(:,1));
+C = -R'*H(:,4)/UD(1,1);
 
     function A = cross_mat(X_i,x_i)
         x_p = [x_i(:); 1];

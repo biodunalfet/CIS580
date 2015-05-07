@@ -55,9 +55,11 @@ for i = 1 : nFrames
     cam_incase = camera(:);
     q = cam_incase(1:4);
     R = q2R(q(:));
-    C = cam_incase(5:end);
-    C = C(:);
-    cP{i} = K*R*[eye(3), -C];
+    %C = cam_incase(5:end);
+    %C = C(:);
+    t = cam_incase(5:end);
+    %cP{i} = K*R*[eye(3), -C];
+    cP{i} = K*[R t(:)];
 end
 
 X = [];
