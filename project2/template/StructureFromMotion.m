@@ -57,7 +57,7 @@ for iImage1 = 1 : nImages-1
         if size(x1,1) < 8
             continue;
         end
-        [~, ~, inlier] = GetInliersRANSAC(x1, x2,0.005,10000);
+        [~, ~, inlier] = GetInliersRANSAC(x1, x2,0.005,2000);
         n_inliers = n_inliers + sum(inlier);
         M(idx(~inlier),iImage1) = 0;
     end
@@ -67,8 +67,8 @@ end
 %{d
 figure(1)
 clf
-match_idx = logical(M);
-showMatchedFeatures(im{1},im{2}, [Mx(match_idx(:,1),1) My(match_idx(:,1),1)], [Mx(match_idx(:,2),2) My(match_idx(:,2),2)])
+match_idx = all(logical(M(:,1:2)),2);
+showMatchedFeatures(im{1},im{2}, x1,x2)
 %{
 imshow(im{1})
 hold on
